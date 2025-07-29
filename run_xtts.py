@@ -15,7 +15,7 @@ def text_to_speech(text, output_path="./src/ttsFiles/output.wav"):
         print("Generating speech...")
         tts.tts_to_file(text=text,
                         file_path=output_path,
-                        speaker_wav="./src/audioFiles/sample-2.wav",
+                        speaker_wav="./src/audioFiles/eldora.wav",
                     language="en")
         return output_path                                    
         print("Speech generated and saved!!")
@@ -25,9 +25,9 @@ def text_to_speech(text, output_path="./src/ttsFiles/output.wav"):
 def deepseek_reasoning(text, ollama_url="http://localhost:11434/api/generate", model="deepseek-r1:7b", explain=False):
     # Add conversational prompt logic
     if not explain:
-        prompt = f"Reply conversationally and keep it short. If asked to explain, provide details.\nUser: {text}"
+        prompt = f"Keep it precise & chatty:\nUser: {text}:"
     else:
-        prompt = f"Explain in detail: {text}"
+        prompt = f"Explain in detail:\nUser: {text}"
     payload = {
         "model": model,
         "prompt": prompt,
@@ -42,9 +42,15 @@ def deepseek_reasoning(text, ollama_url="http://localhost:11434/api/generate", m
         # Extract only the final answer (last line or sentence)
         print(f"DeepSeek response: {reasoning_text}")
         if reasoning_text:
-            # Try to get the last non-empty line
-            lines = [line.strip() for line in reasoning_text.splitlines() if line.strip()]
-            final_answer = lines[-1] if lines else reasoning_text
+            # Remove any <think> block and return only the final answer
+            if '<think>' in reasoning_text:
+                import re
+                final_answer = re.sub(r'<think>.*?</think>', '', reasoning_text, flags=re.DOTALL).strip()
+            else:
+                final_answer = reasoning_text
+            # Remove emojis from the final answer
+            final_answer = re.sub(r'[\U00010000-\U0010ffff\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF]+', '', final_answer)
+            final_answer = final_answer.encode('ascii', 'ignore').decode('ascii')
         else:
             final_answer = ""
         print(f"DeepSeek final answer: {final_answer}")
